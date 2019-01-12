@@ -1,14 +1,24 @@
 {
   "name": "ts-tdd-exercises",
   "version": "1.0.0",
-  "description": "TypeScripts - Test Driven Development exercises",
+  "description": "TypeScript - Test Driven Development exercises",
   "main": "./dist/main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest"
+  },
+  "prettier": {
+    "printWidth": 128,
+    "tabWidth": 2,
+    "singleQuote": true,
+    "semi": true
   },
   "author": "minhthanh310@gmail.com",
   "license": "ISC",
   "devDependencies": {
+    "@types/jest": "^23.3.12",
+    "jest": "^23.6.0",
+    "prettier": "^1.15.3",
+    "ts-jest": "^23.10.5",
     "typescript": "^3.2.2"
   }
 }
