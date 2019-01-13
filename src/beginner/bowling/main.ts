@@ -1,4 +1,3 @@
-export function main(compiler: string) {
-  console.log(`Hello from ${compiler}!`);
-  return 1;
+export function main(): void {
+  console.log(`Bowling game!`);
 }
