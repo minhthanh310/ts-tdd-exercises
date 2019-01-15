@@ -1,22 +1,73 @@
-export function calculate(input: string): number {
-  if (input === '') {
-    return 0;
-  }
-
-  let parts = splitString(input, [',', '\n']).map(p => getNumber(p));
-  return parts.reduce((sum, n) => sum + n, 0);
+export interface ParseResult {
+  valid: boolean;
+  delimitersDefinition: string;
+  content: string;
 }
 
-export function getDelimiters(input: string): Array<string> {
-  let delimiters: Array<string> = [];
-  let hasDelimiterDefinition: boolean = input.slice(0, 2) === '//';
+export function parseInput(input: string): ParseResult {
+  let noDelimiter: ParseResult = {
+    valid: true,
+    delimitersDefinition: '',
+    content: input
+  };
 
+  if (input === '' || input.length < 2) {
+    return noDelimiter;
+  }
+
+  let hasDelimiterDefinition: boolean = input.slice(0, 2) === '//';
   if (hasDelimiterDefinition) {
     let eol: number = input.indexOf('\n');
     if (eol !== -1) {
-      let declareString = input.slice(2, eol);
-      for (let i: number = 0; i < declareString.length; i++) {
-        delimiters.push(declareString.charAt(i));
+      return {
+        valid: true,
+        delimitersDefinition: input.slice(2, eol),
+        content: input.slice(eol + 1)
+      };
+    } else {
+      return {
+        valid: false,
+        delimitersDefinition: '',
+        content: ''
+      };
+    }
+  } else {
+    return noDelimiter;
+  }
+}
+
+export function calculate(content: string, delimiters: Array<string>): number {
+  if (content === '') {
+    return 0;
+  }
+
+  let parts = splitString(content, delimiters).map(p => getNumber(p));
+  return parts.reduce((sum, n) => sum + n, 0);
+}
+
+export function getDelimiters(delimitersDefinition: string): Array<string> {
+  let delimiters: Array<string> = [];
+
+  if (delimitersDefinition.length === 1) {
+    delimiters.push(delimitersDefinition.charAt(0));
+  } else {
+    let delimiter: string = '';
+    let isRecording: boolean = false;
+
+    for (let i: number = 0; i < delimitersDefinition.length; i++) {
+      let c: string = delimitersDefinition.charAt(i);
+      if (c === '[' && !isRecording) {
+        isRecording = true;
+      } else if (c === ']' && isRecording) {
+        isRecording = false;
+        if (delimiter) {
+          delimiters.push(delimiter);
+          delimiter = '';
+        }
+      } else {
+        if (isRecording) {
+          delimiter += c;
+        }
       }
     }
   }
@@ -30,28 +81,42 @@ function splitString(input: string, delimiters: Array<string>): Array<string> {
   }
 
   let parts: Array<string> = [];
-  let isRecording: boolean = false;
+  let partialString: string = '';
   let metDelimiter: boolean = false;
-  let start: number = 0;
   let inputWithPadding = `${delimiters[0]}${input}${delimiters[0]}`;
 
-  for (let i: number = 0; i < inputWithPadding.length; i++) {
-    if (delimiters.some(d => d === inputWithPadding.charAt(i))) {
-      if (isRecording && !metDelimiter) {
-        parts.push(inputWithPadding.slice(start, i));
-        isRecording = false;
+  let i: number = 0;
+  while (i < inputWithPadding.length) {
+    let matchedDelimiterLength = getMatchedDelimiterLength(inputWithPadding.slice(i), delimiters);
+    if (matchedDelimiterLength > 0) {
+      if (partialString !== '' && !metDelimiter) {
+        parts.push(partialString);
+        partialString = '';
       }
       metDelimiter = true;
+      i += matchedDelimiterLength;
     } else {
       if (metDelimiter) {
-        isRecording = true;
-        start = i;
+        partialString = inputWithPadding.charAt(i);
+      } else {
+        partialString += inputWithPadding.charAt(i);
       }
       metDelimiter = false;
+      i++;
     }
   }
 
   return parts;
+}
+
+function getMatchedDelimiterLength(input: string, delimiters: Array<string>): number {
+  for (let d of delimiters) {
+    if (d && input.slice(0, d.length) === d) {
+      return d.length;
+    }
+  }
+
+  return 0;
 }
 
 function getNumber(str: string): number {
